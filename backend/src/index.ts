@@ -1,58 +1,54 @@
-import { Hono } from 'hono'
-import { PrismaClient } from '@prisma/client/edge'
-import { withAccelerate } from '@prisma/extension-accelerate'
+import { Hono } from "hono";
+import { PrismaClient } from "@prisma/client/edge";
+import { withAccelerate } from "@prisma/extension-accelerate";
+import { sign } from "hono/jwt";
 
 const app = new Hono<{
-	Bindings: {
-		DATABASE_URL: string
-	}
+  Bindings: {
+    DATABASE_URL: string;
+    JWT_SECRET: string;
+  };
 }>();
 
-app.post('/api/v1/signup', async (c) => {
-
-
-
-const prisma = new PrismaClient({
+app.post("/api/v1/signup", async (c) => {
+  const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
-}).$extends(withAccelerate());
+  }).$extends(withAccelerate());
 
-const body=await c.req.json();
+  const body = await c.req.json();
 
   try {
-    const user=await prisma.user.create({
-      data:{
-        email:body.email,
-        password:body.password
-      }
-    })
-    
-  } catch (error) {
-    
-  }
-  return c.text('Signup Route')
-})
+    const user = await prisma.user.create({
+      data: {
+        email: body.email,
+        password: body.password,
+      },
+    });
 
+    const jwt = await sign({ id: user.id }, c.env.JWT_SECRET);
 
-app.post('/api/v1/signin', (c) => {
-  return c.text('Signin Route')
-})
+    return c.json({ jwt });
+  } catch (error) {}
+  return c.text("Signup Route");
+});
 
-app.get('/api/v1/blog/:id', (c) => {
-  const id=c.req.param('id')
+app.post("/api/v1/signin", (c) => {
+  return c.text("Signin Route");
+});
+
+app.get("/api/v1/blog/:id", (c) => {
+  const id = c.req.param("id");
   console.log(id);
 
-  return c.text('get Blog route');
-})
+  return c.text("get Blog route");
+});
 
-app.post('/api/v1/blog', (c) => {
-  return c.text('Post blog route')
-})
+app.post("/api/v1/blog", (c) => {
+  return c.text("Post blog route");
+});
 
+app.put("/api/v1/blog", (c) => {
+  return c.text("Update blog route");
+});
 
-app.put('/api/v1/blog', (c) => {
-	return c.text('Update blog route')
-})
-
-
-
-export default app
+export default app;
